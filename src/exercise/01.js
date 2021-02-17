@@ -2,52 +2,40 @@
 // http://localhost:3000/isolated/exercise/01.js
 
 import * as React from 'react'
-import {PokemonDataView, fetchPokemon, PokemonErrorBoundary} from '../pokemon'
+import {createResource} from '../utils'
+import {
+  PokemonDataView,
+  fetchPokemon,
+  PokemonErrorBoundary,
+  PokemonInfoFallback,
+} from '../pokemon'
 
-// let pokemon
-// let pokemonError
+// function createResource(someAsyncThing) {
+//   let status = 'pending'
+//   let result = someAsyncThing.then(
+//     resolvedData => {
+//       status = 'resolved'
+//       result = resolvedData
+//     },
+//     errorData => {
+//       status = 'rejected'
+//       result = errorData
+//     },
+//   )
 
-// const pokemonPromise = fetchPokemon('pikacha').then(
-//   resolvedData => (pokemon = resolvedData),
-//   errorData => (pokemonError = errorData),
-// )
+//   return {
+//     read() {
+//       if (status === 'pending') throw result
+//       if (status === 'rejected') throw result
+//       if (status === 'resolved') return result
+//     },
+//   }
+// }
 
-function createResource(someAsyncThing) {
-  let data
-  let error
- 
-  const resourcePromise = someAsyncThing.then(
-    resolvedData => (data = resolvedData),
-    errorData => (error = errorData),
-  )
-  
-  function read() {
-    if (error) {
-      throw error
-    }
-    if (!data) {
-      throw resourcePromise
-    }
-    return data
-  }
-  return {read}
-}
-
-const resource = createResource(fetchPokemon('pikachu'))
+const pokemonResource = createResource(fetchPokemon('pikachu'))
 
 function PokemonInfo() {
-
-  const pokemon = resource.read()
-
-  console.log(pokemon)
-
-  // if (pokemonError) {
-  //   console.log('error en PokemonInfo')
-  //   throw pokemonError
-  // }
-  // if (!pokemon) {
-  //   throw pokemonPromise
-  // }
+  const pokemon = pokemonResource.read()
 
   return (
     <div>
@@ -64,7 +52,7 @@ function App() {
     <div className="pokemon-info-app">
       <PokemonErrorBoundary>
         <div className="pokemon-info">
-          <React.Suspense fallback={<div>Loading...</div>}>
+          <React.Suspense fallback={<PokemonInfoFallback name='Pikachu' />}>
             <PokemonInfo />
           </React.Suspense>
         </div>
