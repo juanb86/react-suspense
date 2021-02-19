@@ -32,7 +32,6 @@ const SUSPENSE_CONFIG = {
 function createPokemonResource(pokemonName) {
   return createResource(fetchPokemon(pokemonName))
 }
-const pokemonResourceCache = {}
 
 function getPokemonResource(pokemonName) {
   let resource = pokemonResourceCache[pokemonName]
@@ -43,14 +42,24 @@ function getPokemonResource(pokemonName) {
   return resource
 }
 
-const PokemonResourceContext = React.createContext({getPokemonResource})
+const pokemonResourceContextCache = React.createContext({getPokemonResource})
+
+function usePokemonResourceContextCache() {
+  const context = React.useContext(pokemonResourceContextCache)
+  return context
+}
+
+function PokemonCacheProvider() {
+  const pokemonResourceCache = React.useRef({})
+  
+}
 
 function App() {
   const [pokemonName, setPokemonName] = React.useState('')
   const [startTransition, isPending] = React.useTransition(SUSPENSE_CONFIG)
   const [pokemonResource, setPokemonResource] = React.useState(null)
 
-  const {getPokemonResource} = React.useContext(PokemonResourceContext)
+  const {getPokemonResource} = usePokemonResourceContextCache()
 
   React.useEffect(() => {
     if (!pokemonName) {
@@ -58,7 +67,6 @@ function App() {
       return
     }
     startTransition(() => {
-      // 🐨 change this to getPokemonResource instead
       setPokemonResource(getPokemonResource(pokemonName))
     })
   }, [pokemonName, startTransition, getPokemonResource])
