@@ -29,29 +29,47 @@ const SUSPENSE_CONFIG = {
   busyMinDurationMs: 700,
 }
 
+// Pokemon Resource Cache Context
+
+const PokemonResourceCacheContext = React.createContext()
+
 function createPokemonResource(pokemonName) {
   return createResource(fetchPokemon(pokemonName))
 }
 
-function getPokemonResource(pokemonName) {
-  let resource = pokemonResourceCache[pokemonName]
-  if (!resource) {
-    resource = createPokemonResource(pokemonName)
-    pokemonResourceCache[pokemonName] = resource
-  }
-  return resource
-}
+function PokemonCacheProvider(props) {
+  const pokemonResourceCache = React.useRef({})
 
-const pokemonResourceContextCache = React.createContext({getPokemonResource})
+  function getPokemonResource(pokemonName) {
+    let resource = pokemonResourceCache.current[pokemonName]
+    const timeNow = new Date()
+    const isOutdated =
+      resource && props.cacheTime && timeNow - resource.time > props.cacheTime
+
+      console.log(isOutdated)
+    if (!resource || isOutdated) {
+      resource = {
+        pokemonResource: createPokemonResource(pokemonName),
+        time: new Date(),
+      }
+      pokemonResourceCache.current[pokemonName] = resource
+    }
+    return resource.pokemonResource
+  }
+
+  const value = React.useCallback(getPokemonResource, [props])
+
+  return <PokemonResourceCacheContext.Provider value={value} {...props} />
+}
 
 function usePokemonResourceContextCache() {
-  const context = React.useContext(pokemonResourceContextCache)
+  const context = React.useContext(PokemonResourceCacheContext)
+  if (!context) {
+    throw new Error(
+      'usePokemonResourceContextCache must be used within a PokemonCacheProvider',
+    )
+  }
   return context
-}
-
-function PokemonCacheProvider() {
-  const pokemonResourceCache = React.useRef({})
-  
 }
 
 function App() {
@@ -59,7 +77,7 @@ function App() {
   const [startTransition, isPending] = React.useTransition(SUSPENSE_CONFIG)
   const [pokemonResource, setPokemonResource] = React.useState(null)
 
-  const {getPokemonResource} = usePokemonResourceContextCache()
+  const getPokemonResource = usePokemonResourceContextCache()
 
   React.useEffect(() => {
     if (!pokemonName) {
@@ -103,4 +121,12 @@ function App() {
   )
 }
 
-export default App
+function AppWithProvider() {
+  return (
+    <PokemonCacheProvider cacheTime="5000">
+      <App />
+    </PokemonCacheProvider>
+  )
+}
+
+export default AppWithProvider
